@@ -8,6 +8,13 @@
       "when": 1752021086944,
       "tag": "0000_greedy_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1752245729990,
+      "tag": "0001_woozy_starbolt",
+      "breakpoints": true
     }
   ]
 }
