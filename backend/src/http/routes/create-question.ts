@@ -22,7 +22,7 @@ export const createQuestionRoute: FastifyPluginCallbackZod = (app) => {
             roomId,
             question
         }).returning()
-
+        
         const insertedQuestion = result[0]
 
         if (!insertedQuestion) {
