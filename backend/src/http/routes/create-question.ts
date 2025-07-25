@@ -1,7 +1,10 @@
 import type { FastifyPluginCallbackZod } from "fastify-type-provider-zod"
 import { z } from 'zod/v4'
 import { db } from "../../db/connection.ts"
+import { eq, sql, and } from 'drizzle-orm'
 import { schema } from "../../db/schema/index.ts"
+import { generateAnswer, generateEmbeddings } from "../../db/services/gemini.ts"
+import { audioChunks } from "../../db/schema/audio-chunks.ts"
 
 export const createQuestionRoute: FastifyPluginCallbackZod = (app) => {
     app.post('/rooms/:roomId/questions', {
@@ -9,7 +12,7 @@ export const createQuestionRoute: FastifyPluginCallbackZod = (app) => {
             params: z.object({
                 roomId: z.string(),
             }),
-            
+
             body: z.object({
                 question: z.string().min(1)
             })
@@ -18,18 +21,53 @@ export const createQuestionRoute: FastifyPluginCallbackZod = (app) => {
         const { roomId } = request.params
         const { question } = request.body
 
+        const embeddings = await generateEmbeddings(question)
+
+        const embeddingAsString = `[${embeddings.join(',')}]`
+
+        const chunks = await db
+            .select({
+                id: schema.audioChunks.id,
+                transcription: schema.audioChunks.transcription,
+                similarity: sql<number>`1 - (${schema.audioChunks.embeddings} <=> ${embeddingAsString}::vector)`
+            })
+            .from(schema.audioChunks)
+            .where(
+                and(
+                    eq(schema.audioChunks.roomId, roomId),
+                    sql`1 - (${schema.audioChunks.embeddings} <=> ${embeddingAsString}::vector) > 0.7` //Quanto mais próximo de um, mais próximo o texto responde o audio do usuário
+                )
+            )
+            .orderBy(sql`(${schema.audioChunks.embeddings} <=> ${embeddingAsString}::vector)`)
+            .limit(3)
+
+        let answer: string | null = null
+
+        if (chunks.length > 0) {
+            const transcriptions = chunks.map(chunk => chunk.transcription)
+
+            answer = await generateAnswer(question, transcriptions)
+
+        }
+
         const result = await db.insert(schema.questions).values({
             roomId,
-            question
+            question,
+            answer
         }).returning()
-        
+
         const insertedQuestion = result[0]
 
         if (!insertedQuestion) {
             throw new Error('Failed to create new room')
         }
 
-        return reply.status(201).send({ questionId: insertedQuestion.id })
+        return reply.status(201).send({ 
+            questionId: insertedQuestion.id,
+            answer
+
+         })
+
     })
 
 }

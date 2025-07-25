@@ -15,6 +15,13 @@
       "when": 1752245729990,
       "tag": "0001_woozy_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1753191020499,
+      "tag": "0002_charming_mariko_yashida",
+      "breakpoints": true
     }
   ]
 }

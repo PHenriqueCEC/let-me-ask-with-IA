@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { QuestionForm } from '@/components/question-form'
 import { Button } from '@/components/ui/button'
 import { QuestionItem } from '@/components/question-item'
+import { QuestionList } from '@/components/question-list'
 
 type RoomParams = {
   roomId: string
@@ -45,7 +46,7 @@ export function Room() {
           <QuestionForm roomId={params.roomId} />
         </div>
 
-        {/* { <QuestionList roomId={params.roomId} /> } */}
+         { <QuestionList roomId={params.roomId} /> } 
       </div>
     </div>
   )
